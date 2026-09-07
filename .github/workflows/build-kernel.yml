@@ -47,9 +47,9 @@ jobs:
         run: |
           cd "$WORKSPACE"
           git clone --depth 1 --branch v3.3.0 https://github.com/tiann/KernelSU.git
-          # 移动完整仓库到内核根目录，保留.git，不要只复制kernel子目录
           mv ./KernelSU $KERNEL_DIR/
           ls -la $KERNEL_DIR/KernelSU/
+          ls -la $KERNEL_DIR/KernelSU/kernel/
 
       - name: Generate defconfig & build ONLY KernelSU ko
         run: |
@@ -80,15 +80,14 @@ jobs:
 
           make olddefconfig
           make prepare
-          # modules_prepare 生成 Module.symvers，外部模块编译必须
           make modules_prepare
 
-          # modpost错误降级为警告，继续构建
-          KBUILD_MODPOST_WARN=1 make M=$KERNEL_DIR/KernelSU modules
+          # M指向 kernel 子目录，这里才是Kbuild/Makefile所在位置
+          KBUILD_MODPOST_WARN=1 make M=$KERNEL_DIR/KernelSU/kernel modules
 
-          ls -la ./KernelSU/
+          ls -la ./KernelSU/kernel/
           mkdir -p ./out/modules
-          cp ./KernelSU/ksu.ko ./out/modules/
+          cp ./KernelSU/kernel/ksu.ko ./out/modules/
 
           echo -e "\n===== KSU 关键配置检查 ====="
           grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_KALLSYMS|CONFIG_MODULE_SIG' .config
