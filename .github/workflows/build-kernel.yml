@@ -43,15 +43,14 @@ jobs:
           echo "DEVICE=pa3q" >> "${GITHUB_ENV}"
           echo "KERNEL_DIR=${WORKSPACE}/android-kernel" >> "${GITHUB_ENV}"
 
-      - name: Fetch full KernelSU v3.3.0 git repo (keep .git)
+      - name: Fetch full KernelSU v3.3.0 git repo (stay outside kernel tree)
         run: |
           cd "${WORKSPACE}"
           git clone --depth 1 --branch v3.3.0 https://github.com/tiann/KernelSU.git
-          mv ./KernelSU "${KERNEL_DIR}/"
-          ls -la "${KERNEL_DIR}/KernelSU/"
-          ls -la "${KERNEL_DIR}/KernelSU/kernel/"
+          ls -la "${WORKSPACE}/KernelSU/"
+          ls -la "${WORKSPACE}/KernelSU/kernel/"
 
-      - name: Generate defconfig & build ONLY KernelSU ko
+      - name: Prepare kernel build env
         run: |
           cd "${KERNEL_DIR}"
           find . -name "*.sh" -exec chmod +x {} \;
@@ -66,39 +65,40 @@ jobs:
           export CLANG_TRIPLE=aarch64-linux-gnu-
 
           make s25_samsung_lkm_common_v2_defconfig
-
-          {
-            echo "CONFIG_KSU=y"
-            echo "CONFIG_KSU_LKM=y"
-            echo "CONFIG_MODULES=y"
-            echo "CONFIG_KPROBES=y"
-            echo "CONFIG_KALLSYMS=y"
-            echo "CONFIG_KALLSYMS_ALL=y"
-            echo "CONFIG_MODULE_SIG=n"
-            echo "CONFIG_MODULE_SIG_FORCE=n"
-          } >> .config
-
           make olddefconfig
           make prepare
           make modules_prepare
 
-          echo "==== Start build KernelSU module ===="
-          KBUILD_MODPOST_WARN=1 make M="${KERNEL_DIR}/KernelSU/kernel" V=1 modules
+      - name: Build KernelSU as external module
+        run: |
+          export ARCH=arm64
+          export LLVM=1
+          export LLVM_IAS=1
+          export CC=clang
+          export LD=ld.lld
+          export CLANG_TRIPLE=aarch64-linux-gnu-
 
-          echo "==== List output directory ===="
-          ls -laR ./KernelSU/kernel/
+          echo "==== Build external KernelSU module ===="
+          make -C "${KERNEL_DIR}" M="${WORKSPACE}/KernelSU/kernel" \
+          CONFIG_KSU=y \
+          CONFIG_KSU_LKM=y \
+          CONFIG_KPROBES=y \
+          CONFIG_KALLSYMS=y \
+          CONFIG_KALLSYMS_ALL=y \
+          CONFIG_MODULE_SIG=n \
+          CONFIG_MODULE_SIG_FORCE=n \
+          KBUILD_MODPOST_WARN=1 V=1 modules
 
-          mkdir -p ./out/modules
-          if [ -f ./KernelSU/kernel/ksu.ko ]; then
-            cp ./KernelSU/kernel/ksu.ko ./out/modules/
+          ls -la "${WORKSPACE}/KernelSU/kernel/"
+          mkdir -p "${KERNEL_DIR}/out/modules"
+          if [ -f "${WORKSPACE}/KernelSU/kernel/ksu.ko" ]; then
+            cp "${WORKSPACE}/KernelSU/kernel/ksu.ko" "${KERNEL_DIR}/out/modules/"
           else
             echo "ERROR: ksu.ko NOT generated!"
             exit 1
           fi
 
-          echo -e "\n===== KSU 关键配置检查 ====="
-          grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_KALLSYMS|CONFIG_MODULE_SIG' .config
-          ls -lh ./out/modules/
+          ls -lh "${KERNEL_DIR}/out/modules/"
 
       - name: Collect ksu.ko artifact
         uses: actions/upload-artifact@v4
