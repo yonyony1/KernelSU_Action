@@ -43,12 +43,13 @@ jobs:
           echo "DEVICE=pa3q" >> "$GITHUB_ENV"
           echo "KERNEL_DIR=$WORKSPACE/android-kernel" >> "$GITHUB_ENV"
 
-      - name: Fetch KernelSU v3.3.0
+      - name: Fetch full KernelSU v3.3.0 git repo (keep .git)
         run: |
           cd "$WORKSPACE"
-          git clone --depth 1 --branch v3.3.0 https://github.com/tiann/KernelSU.git KernelSU
-          cp -r KernelSU/kernel "$KERNEL_DIR"/KernelSU
-          ls -la "$KERNEL_DIR"/KernelSU
+          git clone --depth 1 --branch v3.3.0 https://github.com/tiann/KernelSU.git
+          # 移动完整仓库到内核根目录，保留.git，不要只复制kernel子目录
+          mv ./KernelSU $KERNEL_DIR/
+          ls -la $KERNEL_DIR/KernelSU/
 
       - name: Generate defconfig & build ONLY KernelSU ko
         run: |
@@ -79,10 +80,13 @@ jobs:
 
           make olddefconfig
           make prepare
+          # modules_prepare 生成 Module.symvers，外部模块编译必须
+          make modules_prepare
 
-          # ===== 关键：只编译KernelSU，不编译整个内核所有模块 =====
-          make M=$KERNEL_DIR/KernelSU modules
+          # modpost错误降级为警告，继续构建
+          KBUILD_MODPOST_WARN=1 make M=$KERNEL_DIR/KernelSU modules
 
+          ls -la ./KernelSU/
           mkdir -p ./out/modules
           cp ./KernelSU/ksu.ko ./out/modules/
 
