@@ -1,8 +1,34 @@
+name: Build S25U ksu.ko LKM
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      WORKSPACE: ${{ github.workspace }}/kernel_workspace
+      CLANG_PATH: ${{ github.workspace }}/kernel_workspace/clang/bin
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git
+
+      - name: Download clang r547379
+        run: |
+          mkdir -p "$WORKSPACE"/clang
+          cd "$WORKSPACE"/clang
+          wget -q https://github.com/llvm/llvm-project/releases/download/llvmorg-18.0.0/clang+llvm-18.0.0-x86_64-linux-gnu-ubuntu-22.04.tar.xz
+          tar -xf clang+llvm-18.0.0-x86_64-linux-gnu-ubuntu-22.04.tar.xz --strip-components=1
+
       - name: Download & extract full kernel source tarball
         run: |
           mkdir -p "$WORKSPACE"/android-kernel
           cd "$WORKSPACE"
-          wget --tries=5 --retry-connrefused --show-progress -O source-kernel.tar.gz https://mirror.ghproxy.com/https://github.com/sungho-moon/s25_gki/releases/download/r21/source-kernel.tar.gz
+          wget --tries=5 --retry-connrefused --show-progress -O source-kernel.tar.gz https://github.com/sungho-moon/s25_gki/releases/download/v6.6.152-r21/source-kernel.tar.gz
           tar -xf source-kernel.tar.gz -C "$WORKSPACE"/android-kernel --strip-components=1
           ls -la "$WORKSPACE"/android-kernel
 
@@ -25,10 +51,8 @@
           export LLVM_IAS=1
           export PATH=$CLANG_PATH:$PATH
 
-          # 使用源码自带lkm defconfig
           make s25_samsung_lkm_common_v2_defconfig
 
-          # 注入ksu必须配置
           echo "CONFIG_KSU=y" >> .config
           echo "CONFIG_KSU_LKM=y" >> .config
           echo "CONFIG_MODULES=y" >> .config
@@ -37,8 +61,6 @@
           echo "CONFIG_MODULE_SIG_FORCE=n" >> .config
 
           make olddefconfig
-
-          # 只编译模块，不编译完整内核镜像
           make -j$(nproc) modules
 
       - name: Collect ksu.ko artifact
@@ -46,6 +68,6 @@
         with:
           name: ksu-module-pa3q
           path: |
-            ${{ env.KERNEL_DIR }}/out/modules/lib/modules/*/kernel/KernelSU/ksu.ko
             ${{ env.KERNEL_DIR }}/.config
+            ${{ env.KERNEL_DIR }}/modules.out/lib/modules/*/kernel/KernelSU/ksu.ko
           if-no-files-found: error
