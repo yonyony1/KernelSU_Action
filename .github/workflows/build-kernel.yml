@@ -12,10 +12,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Install build dependencies + full llvm‑18 toolchain
         run: |
           sudo apt update
-          sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git lld-18
+          sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git lld-18 llvm-18
 
       - name: Download AOSP clang‑r547379 (s25_gki matched toolchain)
         run: |
@@ -50,13 +50,15 @@ jobs:
       - name: Generate defconfig & build modules(LKM only)
         run: |
           cd "$KERNEL_DIR"
-          # 递归给scripts下全部脚本赋执行权限，解决 remove-stale-files 无权限
-          chmod -R +x scripts/
+          # 递归给整个源码树所有shell脚本赋执行权限，修复arch下面vdso脚本权限
+          find . -name "*.sh" -exec chmod +x {} \;
+          find . -executable -type f -name "*" -exec chmod +x {} \;
 
           export ARCH=arm64
           export LLVM=1
           export LLVM_IAS=1
-          export PATH="$CLANG_PATH:$PATH"
+          # 优先clang路径，其次系统llvm‑18路径
+          export PATH="$CLANG_PATH:/usr/lib/llvm-18/bin:$PATH"
           export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
 
