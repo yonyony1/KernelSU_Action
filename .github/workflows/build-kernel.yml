@@ -19,7 +19,6 @@ jobs:
           chmod +x ./llvm.sh
           sudo ./llvm.sh 18
           sudo apt install -y llvm-18
-          # Full set llvm symlinks strip -18 suffix for kernel LLVM=1
           sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
           sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
           sudo ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld
@@ -30,11 +29,6 @@ jobs:
           sudo ln -sf /usr/bin/llvm-strip-18 /usr/bin/llvm-strip
           clang --version
           ld.lld --version
-          llvm-ar --version
-          llvm-objcopy --version
-          llvm-nm --version
-          llvm-readelf --version
-          llvm-strip --version
 
       - name: Download s25_gki v6.6.152‑r21 kernel source
         run: |
@@ -56,7 +50,7 @@ jobs:
           cp -r KernelSU/kernel "$KERNEL_DIR"/KernelSU
           ls -la "$KERNEL_DIR"/KernelSU
 
-      - name: Generate defconfig & build modules(LKM only)
+      - name: Generate defconfig & build ONLY KernelSU ko
         run: |
           cd "$KERNEL_DIR"
           find . -name "*.sh" -exec chmod +x {} \;
@@ -84,16 +78,17 @@ jobs:
           } >> .config
 
           make olddefconfig
-
-          # GKI 6.6 必须执行prepare，生成内核导出头文件
           make prepare
 
-          make modules
-          make -j1 modules_install INSTALL_MOD_PATH=./out/modules
+          # ===== 关键：只编译KernelSU，不编译整个内核所有模块 =====
+          make M=$KERNEL_DIR/KernelSU modules
+
+          mkdir -p ./out/modules
+          cp ./KernelSU/ksu.ko ./out/modules/
 
           echo -e "\n===== KSU 关键配置检查 ====="
           grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_KALLSYMS|CONFIG_MODULE_SIG' .config
-          echo -e "=============================\n"
+          ls -lh ./out/modules/
 
       - name: Collect ksu.ko artifact
         uses: actions/upload-artifact@v4
@@ -101,5 +96,5 @@ jobs:
           name: ksu-module-pa3q
           path: |
             ${{ env.KERNEL_DIR }}/.config
-            ${{ env.KERNEL_DIR }}/out/modules/lib/modules/*/kernel/KernelSU/ksu.ko
+            ${{ env.KERNEL_DIR }}/out/modules/ksu.ko
           if-no-files-found: error
