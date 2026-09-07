@@ -82,11 +82,19 @@ jobs:
           make prepare
           make modules_prepare
 
-          KBUILD_MODPOST_WARN=1 make M="${KERNEL_DIR}/KernelSU/kernel" modules
+          echo "==== Start build KernelSU module ===="
+          KBUILD_MODPOST_WARN=1 make M="${KERNEL_DIR}/KernelSU/kernel" V=1 modules
 
-          ls -la ./KernelSU/kernel/
+          echo "==== List output directory ===="
+          ls -laR ./KernelSU/kernel/
+
           mkdir -p ./out/modules
-          cp ./KernelSU/kernel/ksu.ko ./out/modules/
+          if [ -f ./KernelSU/kernel/ksu.ko ]; then
+            cp ./KernelSU/kernel/ksu.ko ./out/modules/
+          else
+            echo "ERROR: ksu.ko NOT generated!"
+            exit 1
+          fi
 
           echo -e "\n===== KSU 关键配置检查 ====="
           grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_KALLSYMS|CONFIG_MODULE_SIG' .config
