@@ -50,8 +50,8 @@ jobs:
       - name: Generate defconfig & build modules(LKM only)
         run: |
           cd "$KERNEL_DIR"
-          # 修复内核脚本执行权限
-          chmod +x scripts/*.sh scripts/*/*.sh
+          # 递归给scripts下全部脚本赋执行权限，解决 remove-stale-files 无权限
+          chmod -R +x scripts/
 
           export ARCH=arm64
           export LLVM=1
