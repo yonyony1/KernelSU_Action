@@ -28,7 +28,6 @@ jobs:
           sudo ln -sf /usr/bin/llvm-nm-18 /usr/bin/llvm-nm
           sudo ln -sf /usr/bin/llvm-readelf-18 /usr/bin/llvm-readelf
           sudo ln -sf /usr/bin/llvm-strip-18 /usr/bin/llvm-strip
-          # verify all binaries
           clang --version
           ld.lld --version
           llvm-ar --version
@@ -85,6 +84,9 @@ jobs:
           } >> .config
 
           make olddefconfig
+
+          # GKI 6.6 必须执行prepare，生成内核导出头文件
+          make prepare
 
           make modules
           make -j1 modules_install INSTALL_MOD_PATH=./out/modules
