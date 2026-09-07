@@ -21,14 +21,14 @@ jobs:
         run: |
           mkdir -p "$WORKSPACE"/clang
           cd "$WORKSPACE"/clang
-          wget -q https://mirror.ghproxy.com/https://github.com/llvm/llvm-project/releases/download/llvmorg-18.0.0/clang+llvm-18.0.0-x86_64-linux-gnu-ubuntu-22.04.tar.xz
+          wget -q https://github.com/llvm/llvm-project/releases/download/llvmorg-18.0.0/clang+llvm-18.0.0-x86_64-linux-gnu-ubuntu-22.04.tar.xz
           tar -xf clang+llvm-18.0.0-x86_64-linux-gnu-ubuntu-22.04.tar.xz --strip-components=1
 
       - name: Download & extract full kernel source tarball
         run: |
           mkdir -p "$WORKSPACE"/android-kernel
           cd "$WORKSPACE"
-          wget --tries=5 --retry-connrefused --show-progress -O source-kernel.tar.gz https://mirror.ghproxy.com/https://github.com/sungho-moon/s25_gki/releases/download/r21/source-kernel.tar.gz
+          wget --tries=5 --retry-connrefused --show-progress -O source-kernel.tar.gz https://github.com/sungho-moon/s25_gki/releases/download/v6.6.152-r21/source-kernel.tar.gz
           tar -xf source-kernel.tar.gz -C "$WORKSPACE"/android-kernel --strip-components=1
           ls -la "$WORKSPACE"/android-kernel
 
