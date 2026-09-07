@@ -124,7 +124,7 @@ jobs:
 
       - name: Free up disk space
         if: env.REMOVE_UNUSED_PACKAGES == 'true'
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        uses: jlumbroso/free-disk-space@54081f138730dfa95688f563f4786effcdb79814
         with:
           tool-cache: true
           android: false
@@ -156,14 +156,16 @@ jobs:
 
       - name: Download & extract full kernel source tarball
         run: |
- mkdir -p "$WORKSPACE"/android-kernel
+          mkdir -p "$WORKSPACE"/android-kernel
           cd "$WORKSPACE"
           wget --tries=5 --retry-connrefused --show-progress -O source-kernel.tar.gz https://mirror.ghproxy.com/https://github.com/sungho-moon/s25_gki/releases/download/r21/source-kernel.tar.gz
           ls -lh source-kernel.tar.gz
           tar -xzf source-kernel.tar.gz -C "$WORKSPACE"/android-kernel --strip-components=1
           ls -la "$WORKSPACE"/android-kernel
+
       - name: Override DEVICE variable
-         run: echo "DEVICE=pa3q" >> "$GITHUB_ENV"
+        run: echo "DEVICE=pa3q" >> "$GITHUB_ENV"
+
       - name: Install KernelSU
         if: env.KSU_VARIANT != 'none'
         run: bash scripts/kernelsu.sh
