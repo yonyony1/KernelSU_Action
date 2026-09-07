@@ -21,9 +21,9 @@ jobs:
         run: |
           mkdir -p "$WORKSPACE"/clang
           cd "$WORKSPACE"/clang
-          wget -q https://github.com/llvm/llvm-project/releases/download/llvmorg-18.0.0/clang+llvm-18.0.0-x86_64-linux-gnu-ubuntu-22.04.tar.xz
-          tar -xf clang+llvm-18.0.0-x86_64-linux-gnu-ubuntu-22.04.tar.xz --strip-components=1
-
+          wget -q https://github.com/itsaschoolbus-stuff/clang-mirror/releases/download/clang-r547379-aosp/clang.tar.gz
+          tar -xf clang.tar.gz --strip-components=1
+          chmod +x bin/*
       - name: Download & extract full kernel source tarball
         run: |
           mkdir -p "$WORKSPACE"/android-kernel
