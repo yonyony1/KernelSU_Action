@@ -151,9 +151,10 @@ jobs:
           tar -xzf source-kernel.tar.gz -C "$WORKSPACE"/android-kernel --strip-components=1
           ls -la "$WORKSPACE"/android-kernel
 
-      - name: Override DEVICE variable
-        run: echo "DEVICE=pa3q" >> "$GITHUB_ENV"
-
+      - name: Override env variables
+        run: |
+          echo "DEVICE=pa3q" >> "$GITHUB_ENV"
+          echo "KERNEL_DIR=$WORKSPACE/android-kernel" >> "$GITHUB_ENV"
       - name: Install KernelSU
         if: env.KSU_VARIANT != 'none'
         run: bash scripts/kernelsu.sh
