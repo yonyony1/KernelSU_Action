@@ -69,6 +69,8 @@ jobs:
             echo "CONFIG_KSU_LKM=y"
             echo "CONFIG_MODULES=y"
             echo "CONFIG_KPROBES=y"
+            echo "CONFIG_KALLSYMS=y"
+            echo "CONFIG_KALLSYMS_ALL=y"
             echo "CONFIG_MODULE_SIG=n"
             echo "CONFIG_MODULE_SIG_FORCE=n"
           } >> .config
@@ -76,13 +78,13 @@ jobs:
           make olddefconfig
 
           # 先编译模块，生成modules.order
-          make -j"$(nproc)" LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules
+          make LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules
           # 再执行模块安装，单线程避免竞态
           make -j1 LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules_install INSTALL_MOD_PATH=./out/modules
 
           # ========== 打印关键配置，CI日志直接看KSU是否生效 ==========
           echo -e "\n===== KSU 关键配置检查 ====="
-          grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_MODULE_SIG' .config
+          grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_KALLSYMS|CONFIG_MODULE_SIG' .config
           echo -e "=============================\n"
 
       - name: Collect ksu.ko artifact
