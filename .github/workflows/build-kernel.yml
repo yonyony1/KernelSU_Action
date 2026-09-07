@@ -1,110 +1,62 @@
-name: Build S25U ksu.ko LKM
-on:
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    env:
-      WORKSPACE: "${{ github.workspace }}/kernel_workspace"
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Install base build dependencies & full LLVM‑18
+      - name: Checkout KernelSU v3.3.0
         run: |
-          sudo apt update
-          sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git curl
-          curl -fsSL https://apt.llvm.org/llvm.sh -o llvm.sh
-          chmod +x ./llvm.sh
-          sudo ./llvm.sh 18
-          sudo apt install -y llvm-18
-          sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
-          sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
-          sudo ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld
-          sudo ln -sf /usr/bin/llvm-ar-18 /usr/bin/llvm-ar
-          sudo ln -sf /usr/bin/llvm-objcopy-18 /usr/bin/llvm-objcopy
-          sudo ln -sf /usr/bin/llvm-nm-18 /usr/bin/llvm-nm
-          sudo ln -sf /usr/bin/llvm-readelf-18 /usr/bin/llvm-readelf
-          sudo ln -sf /usr/bin/llvm-strip-18 /usr/bin/llvm-strip
-          clang --version
-          ld.lld --version
-
-      - name: Download s25_gki v6.6.152‑r21 kernel source
-        run: |
-          mkdir -p "${WORKSPACE}/android-kernel"
+          set -e
           cd "${WORKSPACE}"
-          wget --tries=5 --retry-connrefused --show-progress -O source-kernel.tar.gz https://github.com/sungho-moon/s25_gki/releases/download/v6.6.152-r21/source-kernel.tar.gz
-          tar -xf source-kernel.tar.gz -C "${WORKSPACE}/android-kernel" --strip-components=1
-          ls -la "${WORKSPACE}/android-kernel"
+          rm -rf KernelSU
+          git clone --depth=1 --branch v3.3.0 https://github.com/tiann/KernelSU.git KernelSU
+        shell: bash
+        env:
+          WORKSPACE: ${{ env.WORKSPACE }}
 
-      - name: Override env variables
+      - name: Build KernelSU 3.3.0 External LKM
         run: |
-          echo "DEVICE=pa3q" >> "${GITHUB_ENV}"
-          echo "KERNEL_DIR=${WORKSPACE}/android-kernel" >> "${GITHUB_ENV}"
+          set -e
+          export ARCH=arm64
+          export LLVM=1
+          export LLVM_IAS=1
+          export CC=clang
+          export LD=ld.lld
+          export CLANG_TRIPLE=aarch64-linux-gnu-
 
-      - name: Fetch full KernelSU v3.3.0 git repo (stay outside kernel tree)
-        run: |
-          cd "${WORKSPACE}"
-          git clone --depth 1 --branch v3.3.0 https://github.com/tiann/KernelSU.git
-          ls -la "${WORKSPACE}/KernelSU/"
-          ls -la "${WORKSPACE}/KernelSU/kernel/"
-
-      - name: Prepare kernel build env
-        run: |
           cd "${KERNEL_DIR}"
-          find . -name "*.sh" -exec chmod +x {} \;
-          find ./scripts -type f -exec chmod +x {} \;
-          chmod +x ./scripts/remove-stale-files
 
-          export ARCH=arm64
-          export LLVM=1
-          export LLVM_IAS=1
-          export CC=clang
-          export LD=ld.lld
-          export CLANG_TRIPLE=aarch64-linux-gnu-
+          # 生成 .config
+          make ${DEVICE}_defconfig
 
-          make s25_samsung_lkm_common_v2_defconfig
-          make olddefconfig
-          make prepare
-          make modules_prepare
+          # KSU‑3.3.0：移除 KSU_LKM，只设置 CONFIG_KSU=m
+          scripts/config --set-val KSU m
+          scripts/config --set-val KPROBES y
+          scripts/config --set-val KALLSYMS y
+          scripts/config --set-val KALLSYMS_ALL y
+          scripts/config --set-val MODULE_SIG n
+          scripts/config --set-val MODULE_SIG_FORCE n
 
-      - name: Build KernelSU as external module
-        run: |
-          export ARCH=arm64
-          export LLVM=1
-          export LLVM_IAS=1
-          export CC=clang
-          export LD=ld.lld
-          export CLANG_TRIPLE=aarch64-linux-gnu-
+          make -j$(nproc) prepare
+          make -j$(nproc) modules_prepare
 
-          echo "==== Build external KernelSU module ===="
+          # s25‑gki 6.6内核需要生成vmlinux保证modpost完整
+          make -j$(nproc) vmlinux
+
+          echo "==== Build external KernelSU‑3.3.0 module ===="
           make -C "${KERNEL_DIR}" M="${WORKSPACE}/KernelSU/kernel" \
-          CONFIG_KSU=y \
-          CONFIG_KSU_LKM=y \
-          CONFIG_KPROBES=y \
-          CONFIG_KALLSYMS=y \
-          CONFIG_KALLSYMS_ALL=y \
-          CONFIG_MODULE_SIG=n \
-          CONFIG_MODULE_SIG_FORCE=n \
-          KBUILD_MODPOST_WARN=1 V=1 modules
+            KBUILD_MODPOST_WARN=1 V=1 \
+            modules
 
           ls -la "${WORKSPACE}/KernelSU/kernel/"
           mkdir -p "${KERNEL_DIR}/out/modules"
+
           if [ -f "${WORKSPACE}/KernelSU/kernel/ksu.ko" ]; then
             cp "${WORKSPACE}/KernelSU/kernel/ksu.ko" "${KERNEL_DIR}/out/modules/"
+            echo "ksu.ko build success"
           else
             echo "ERROR: ksu.ko NOT generated!"
+            make -C "${KERNEL_DIR}" M="${WORKSPACE}/KernelSU/kernel" V=2 modules
             exit 1
           fi
 
           ls -lh "${KERNEL_DIR}/out/modules/"
-
-      - name: Collect ksu.ko artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ksu-module-pa3q
-          path: |
-            ${{ env.KERNEL_DIR }}/.config
-            ${{ env.KERNEL_DIR }}/out/modules/ksu.ko
-          if-no-files-found: error
+        shell: bash
+        env:
+          WORKSPACE: ${{ env.WORKSPACE }}
+          DEVICE: ${{ env.DEVICE }}
+          KERNEL_DIR: ${{ env.KERNEL_DIR }}
