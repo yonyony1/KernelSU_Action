@@ -58,7 +58,7 @@ on:
         type: choice
         options: [config, "true", "false"]
       kpm:
-        description: "Enable KPM (SukiSU-Ultra only)"
+        description: "Enable KPM (SukiSU‑Ultra only)"
         required: false
         default: "config"
         type: choice
@@ -89,8 +89,8 @@ on:
 
 # Only one build per ref at a time; a newer run supersedes an older one.
 concurrency:
-  group: build-kernel-${{ github.ref }}-${{ inputs.config }}
-  cancel-in-progress: true
+  group: build‑kernel‑${{ github.ref }}‑${{ inputs.config }}
+  cancel‑in‑progress: true
 
 permissions:
   contents: read
@@ -98,8 +98,8 @@ permissions:
 jobs:
   build:
     name: Build ${{ inputs.config }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
+    runs‑on: ubuntu‑latest
+    timeout‑minutes: 120
     outputs:
       device: ${{ steps.meta.outputs.device }}
       build_time: ${{ steps.meta.outputs.build_time }}
@@ -110,11 +110,11 @@ jobs:
     env:
       WORKSPACE: ${{ github.workspace }}/kernel_workspace
       CONFIG_ENV: ${{ inputs.config }}
-      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_COMPILERCHECK: "%compiler% ‑dumpmachine; %compiler% ‑dumpversion"
       CCACHE_NOHASHDIR: "true"
       CCACHE_HARDLINK: "true"
 
-      # workflow inputs -> IN_* overrides consumed by scripts/config.sh
+      # workflow inputs ‑> IN_* overrides consumed by scripts/config.sh
       IN_KSU_VARIANT: ${{ inputs.ksu_variant }}
       IN_KSU_REF: ${{ inputs.ksu_ref }}
       IN_KSU_HOOK_MODE: ${{ inputs.hook_mode }}
@@ -132,44 +132,51 @@ jobs:
 
       - name: Free up disk space
         if: env.REMOVE_UNUSED_PACKAGES == 'true'
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        uses: jlumbroso/free‑disk‑space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
-          tool-cache: true
+          tool‑cache: true
           android: false
           dotnet: true
           haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: false
+          large‑packages: true
+          docker‑images: true
+          swap‑storage: false
 
       - name: Add swap space
         run: |
-          # LTO links are memory-hungry and the runner has 16GB; a swap file is
-          # cheaper and more predictable than an unpinned third-party action.
-          sudo fallocate -l 8G /mnt/swapfile
+          # LTO links are memory‑hungry and the runner has 16GB; a swap file is
+          # cheaper and more predictable than an unpinned third‑party action.
+          sudo fallocate ‑l 8G /mnt/swapfile
           sudo chmod 600 /mnt/swapfile
           sudo mkswap /mnt/swapfile
           sudo swapon /mnt/swapfile
-          free -h
+          free ‑h
 
       - name: Install build dependencies
         run: |
-          sudo apt-get update -qq
+          sudo apt‑get update ‑qq
           # Kept deliberately lean. The historical list here was copied from the
           # full AOSP platform build docs and pulled in ~40 packages a kernel
           # build never touches, several of which no longer exist on current
-          # Ubuntu (python2, lib32ncurses5-dev, ...).
-          sudo apt-get install -y --no-install-recommends \
-            bc bison build-essential ccache cpio curl device-tree-compiler flex \
-            git libelf-dev libssl-dev lz4 make python3 rsync unzip zip zstd \
-            libncurses-dev
-          mkdir -p "$WORKSPACE"
+          # Ubuntu (python2, lib32ncurses5‑dev, ...).
+          sudo apt‑get install ‑y ‑‑no‑install‑recommends \
+            bc bison build‑essential ccache cpio curl device‑tree‑compiler flex \
+            git libelf‑dev libssl‑dev lz4 make python3 rsync unzip zip zstd \
+            libncurses‑dev
+          mkdir ‑p "$WORKSPACE"
 
       - name: Set up toolchain
         run: bash scripts/toolchain.sh
 
-      - name: Fetch kernel source
-        run: bash scripts/source.sh
+      # ========== 替换原 Fetch kernel source：在线下载解压完整源码包 ==========
+      - name: Download & extract full kernel source tarball
+        run: |
+          mkdir ‑p "$WORKSPACE"/android‑kernel
+          cd "$WORKSPACE"
+          wget ‑‑tries=5 ‑‑retry‑connrefused ‑q ‑‑show‑progress ‑O source‑kernel.tar.gz https://github.com/sungho‑moon/s25_gki/releases/download/r21/source‑kernel.tar.gz
+          tar ‑xzf source‑kernel.tar.gz ‑C "$WORKSPACE"/android‑kernel ‑‑strip‑components=1
+          ls ‑la "$WORKSPACE"/android‑kernel
+      # ======================================================================
 
       - name: Install KernelSU
         if: env.KSU_VARIANT != 'none'
@@ -180,10 +187,10 @@ jobs:
 
       - name: Set up ccache
         if: env.ENABLE_CCACHE == 'true'
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache‑action@v1.2
         with:
-          key: kernel-${{ env.DEVICE }}-${{ env.KSU_VARIANT }}-${{ env.KERNEL_VERSION }}
-          max-size: 2G
+          key: kernel‑${{ env.DEVICE }}‑${{ env.KSU_VARIANT }}‑${{ env.KERNEL_VERSION }}
+          max‑size: 2G
 
       - name: Build kernel
         run: bash scripts/build.sh all
@@ -204,67 +211,67 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Upload kernel image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload‑artifact@v4
         with:
-          name: ${{ env.KERNEL_IMAGE_NAME }}${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}-${{ env.DEVICE }}-${{ env.BUILD_TIME }}
-          path: kernel_workspace/android-kernel/out/arch/${{ env.ARCH }}/boot/${{ env.KERNEL_IMAGE_NAME }}
-          if-no-files-found: error
+          name: ${{ env.KERNEL_IMAGE_NAME }}${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}‑${{ env.DEVICE }}‑${{ env.BUILD_TIME }}
+          path: kernel_workspace/android‑kernel/out/arch/${{ env.ARCH }}/boot/${{ env.KERNEL_IMAGE_NAME }}
+          if‑no‑files‑found: error
 
       - name: Upload AnyKernel3
-        uses: actions/upload-artifact@v4
+        uses: actions/upload‑artifact@v4
         with:
-          name: AnyKernel3${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}-${{ env.DEVICE }}-${{ env.BUILD_TIME }}
+          name: AnyKernel3${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}‑${{ env.DEVICE }}‑${{ env.BUILD_TIME }}
           path: kernel_workspace/AnyKernel3/*
-          if-no-files-found: error
+          if‑no‑files‑found: error
 
       - name: Upload DTBO image
         if: env.CHECK_DTBO_IS_OK == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload‑artifact@v4
         with:
-          name: dtbo-${{ env.DEVICE }}-${{ env.BUILD_TIME }}
-          path: kernel_workspace/android-kernel/out/arch/${{ env.ARCH }}/boot/dtbo.img
+          name: dtbo‑${{ env.DEVICE }}‑${{ env.BUILD_TIME }}
+          path: kernel_workspace/android‑kernel/out/arch/${{ env.ARCH }}/boot/dtbo.img
 
       - name: Upload boot image
         if: env.MAKE_BOOT_IMAGE_IS_OK == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload‑artifact@v4
         with:
-          name: boot${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}-${{ env.DEVICE }}-${{ env.BUILD_TIME }}
+          name: boot${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}‑${{ env.DEVICE }}‑${{ env.BUILD_TIME }}
           path: kernel_workspace/boot.img
 
-  # Publishing is a separate job so the build itself runs with a read-only
+  # Publishing is a separate job so the build itself runs with a read‑only
   # token; only this job gets contents:write, and only when asked for.
   release:
     name: Publish release
     needs: build
     if: inputs.publish_release
-    runs-on: ubuntu-latest
+    runs‑on: ubuntu‑latest
     permissions:
       contents: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download‑artifact@v4
         with:
           path: artifacts
-          merge-multiple: false
+          merge‑multiple: false
 
       - name: Package AnyKernel3 as a flashable zip
         run: |
-          mkdir -p release
-          shopt -s nullglob
+          mkdir ‑p release
+          shopt ‑s nullglob
           for dir in artifacts/AnyKernel3*/; do
             name=$(basename "${dir%/}")
-            (cd "$dir" && zip -qr9 "${GITHUB_WORKSPACE}/release/${name}.zip" .)
+            (cd "$dir" && zip ‑qr9 "${GITHUB_WORKSPACE}/release/${name}.zip" .)
             echo "packed ${name}.zip"
           done
           for f in artifacts/*/Image* artifacts/*/boot.img artifacts/*/dtbo.img; do
-            [ -f "$f" ] && cp "$f" release/
+            [ ‑f "$f" ] && cp "$f" release/
           done
-          ls -la release/
+          ls ‑la release/
 
       - name: Create release
-        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        uses: softprops/action‑gh‑release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
-          tag_name: ${{ needs.build.outputs.device }}-${{ needs.build.outputs.build_time }}
+          tag_name: ${{ needs.build.outputs.device }}‑${{ needs.build.outputs.build_time }}
           name: ${{ needs.build.outputs.device }} · ${{ needs.build.outputs.ksu_name }} · ${{ needs.build.outputs.build_time }}
           body: |
             | | |
