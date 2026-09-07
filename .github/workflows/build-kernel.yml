@@ -7,28 +7,22 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WORKSPACE: ${{ github.workspace }}/kernel_workspace
-      CLANG_PATH: ${{ github.workspace }}/kernel_workspace/clang/bin
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install minimal build dependencies + libtinfo5 compat
+      - name: Install base build dependencies
         run: |
           sudo apt update
           sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git
-          echo "deb http://old-releases.ubuntu.com/ubuntu bionic main" | sudo tee /etc/apt/sources.list.d/bionic.list
-          sudo apt update
-          sudo apt install -y libtinfo5
 
-      - name: Download LLVM‑18.1.8 (ubuntu‑18.04 build, no proxy)
-        run: |
-          mkdir -p "$WORKSPACE"/clang
-          cd "$WORKSPACE"/clang
-          wget --tries=5 --retry-connrefused -O clang.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-          tar -xf clang.tar.xz --strip-components=1
-          chmod +x bin/*
+      - name: Setup LLVM 18.1.8 (native for runner OS, no so dependency hell)
+        uses: KyleMayes/install-llvm-action@v17
+        with:
+          version: "18.1.8"
+          directory: ${{ runner.temp }}/llvm
 
-      - name: Download s25_gki v6.6.152‑r21 kernel source (no proxy)
+      - name: Download s25_gki v6.6.152‑r21 kernel source
         run: |
           mkdir -p "$WORKSPACE"/android-kernel
           cd "$WORKSPACE"
@@ -59,7 +53,6 @@ jobs:
           export ARCH=arm64
           export LLVM=1
           export LLVM_IAS=1
-          export PATH="$CLANG_PATH:$PATH"
           export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
 
@@ -78,7 +71,7 @@ jobs:
 
           make olddefconfig
 
-          # single thread for full error log
+          # single thread capture full link error
           make LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules
           make -j1 LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules_install INSTALL_MOD_PATH=./out/modules
 
