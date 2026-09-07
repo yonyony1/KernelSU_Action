@@ -76,7 +76,9 @@ jobs:
           } >> .config
 
           make olddefconfig
-
+          sed -i 's/CONFIG_NETFILTER_XT_MARK=[ym]/CONFIG_NETFILTER_XT_MARK=n/' .config
+          # 再跑一次olddefconfig保证配置生效
+          make olddefconfig
           # 先编译模块，生成modules.order
           make LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules
           # 再执行模块安装，单线程避免竞态
