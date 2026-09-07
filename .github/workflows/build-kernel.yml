@@ -75,8 +75,10 @@ jobs:
 
           make olddefconfig
 
-          # 编译模块 + modules_install 输出 out/modules
-          make -j"$(nproc)" LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules modules_install INSTALL_MOD_PATH=./out/modules
+          # 先编译模块，生成modules.order
+          make -j"$(nproc)" LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules
+          # 再执行模块安装，单线程避免竞态
+          make -j1 LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules_install INSTALL_MOD_PATH=./out/modules
 
           # ========== 打印关键配置，CI日志直接看KSU是否生效 ==========
           echo -e "\n===== KSU 关键配置检查 ====="
