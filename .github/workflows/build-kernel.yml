@@ -11,16 +11,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install base build dependencies
+      - name: Install base build dependencies & LLVM‑18 via llvm.sh
         run: |
           sudo apt update
-          sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git
-
-      - name: Setup LLVM 18.1.8 (native for runner OS, no so dependency hell)
-        uses: KyleMayes/install-llvm-action@v17
-        with:
-          version: "18.1.8"
-          directory: ${{ runner.temp }}/llvm
+          sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git curl
+          # 官方llvm脚本，安装18版本(clang‑18 lld‑18)
+          curl -fsSL https://apt.llvm.org/llvm.sh -o llvm.sh
+          chmod +x ./llvm.sh
+          sudo ./llvm.sh 18
 
       - name: Download s25_gki v6.6.152‑r21 kernel source
         run: |
@@ -53,7 +51,9 @@ jobs:
           export ARCH=arm64
           export LLVM=1
           export LLVM_IAS=1
-          export LD=ld.lld
+          # apt安装出来叫 clang‑18 ld.lld‑18
+          export CC=clang‑18
+          export LD=ld.lld‑18
           export CLANG_TRIPLE=aarch64-linux-gnu-
 
           make s25_samsung_lkm_common_v2_defconfig
@@ -72,8 +72,8 @@ jobs:
           make olddefconfig
 
           # single thread capture full link error
-          make LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules
-          make -j1 LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules_install INSTALL_MOD_PATH=./out/modules
+          make CC=clang‑18 LD=ld.lld‑18 CLANG_TRIPLE=aarch64-linux-gnu- modules
+          make -j1 CC=clang‑18 LD=ld.lld‑18 CLANG_TRIPLE=aarch64-linux-gnu- modules_install INSTALL_MOD_PATH=./out/modules
 
           echo -e "\n===== KSU 关键配置检查 ====="
           grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_KALLSYMS|CONFIG_MODULE_SIG' .config
