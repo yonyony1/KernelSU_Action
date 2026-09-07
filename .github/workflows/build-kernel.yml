@@ -15,10 +15,15 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git curl
-          # 官方llvm脚本，安装18版本(clang‑18 lld‑18)
           curl -fsSL https://apt.llvm.org/llvm.sh -o llvm.sh
           chmod +x ./llvm.sh
           sudo ./llvm.sh 18
+          # create symlinks without -18 suffix
+          sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld
+          clang --version
+          ld.lld --version
 
       - name: Download s25_gki v6.6.152‑r21 kernel source
         run: |
@@ -43,7 +48,6 @@ jobs:
       - name: Generate defconfig & build modules(LKM only)
         run: |
           cd "$KERNEL_DIR"
-          # fix script execute permission
           find . -name "*.sh" -exec chmod +x {} \;
           find ./scripts -type f -exec chmod +x {} \;
           chmod +x ./scripts/remove-stale-files
@@ -51,9 +55,8 @@ jobs:
           export ARCH=arm64
           export LLVM=1
           export LLVM_IAS=1
-          # apt安装出来叫 clang‑18 ld.lld‑18
-          export CC=clang‑18
-          export LD=ld.lld‑18
+          export CC=clang
+          export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
 
           make s25_samsung_lkm_common_v2_defconfig
@@ -71,9 +74,8 @@ jobs:
 
           make olddefconfig
 
-          # single thread capture full link error
-          make CC=clang‑18 LD=ld.lld‑18 CLANG_TRIPLE=aarch64-linux-gnu- modules
-          make -j1 CC=clang‑18 LD=ld.lld‑18 CLANG_TRIPLE=aarch64-linux-gnu- modules_install INSTALL_MOD_PATH=./out/modules
+          make modules
+          make -j1 modules_install INSTALL_MOD_PATH=./out/modules
 
           echo -e "\n===== KSU 关键配置检查 ====="
           grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_KALLSYMS|CONFIG_MODULE_SIG' .config
