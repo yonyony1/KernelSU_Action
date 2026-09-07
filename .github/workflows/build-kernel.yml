@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      WORKSPACE: ${{ github.workspace }}/kernel_workspace
+      WORKSPACE: "${{ github.workspace }}/kernel_workspace"
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -32,28 +32,28 @@ jobs:
 
       - name: Download s25_gki v6.6.152‑r21 kernel source
         run: |
-          mkdir -p "$WORKSPACE"/android-kernel
-          cd "$WORKSPACE"
+          mkdir -p "${WORKSPACE}/android-kernel"
+          cd "${WORKSPACE}"
           wget --tries=5 --retry-connrefused --show-progress -O source-kernel.tar.gz https://github.com/sungho-moon/s25_gki/releases/download/v6.6.152-r21/source-kernel.tar.gz
-          tar -xf source-kernel.tar.gz -C "$WORKSPACE"/android-kernel --strip-components=1
-          ls -la "$WORKSPACE"/android-kernel
+          tar -xf source-kernel.tar.gz -C "${WORKSPACE}/android-kernel" --strip-components=1
+          ls -la "${WORKSPACE}/android-kernel"
 
       - name: Override env variables
         run: |
-          echo "DEVICE=pa3q" >> "$GITHUB_ENV"
-          echo "KERNEL_DIR=$WORKSPACE/android-kernel" >> "$GITHUB_ENV"
+          echo "DEVICE=pa3q" >> "${GITHUB_ENV}"
+          echo "KERNEL_DIR=${WORKSPACE}/android-kernel" >> "${GITHUB_ENV}"
 
       - name: Fetch full KernelSU v3.3.0 git repo (keep .git)
         run: |
-          cd "$WORKSPACE"
+          cd "${WORKSPACE}"
           git clone --depth 1 --branch v3.3.0 https://github.com/tiann/KernelSU.git
-          mv ./KernelSU $KERNEL_DIR/
-          ls -la $KERNEL_DIR/KernelSU/
-          ls -la $KERNEL_DIR/KernelSU/kernel/
+          mv ./KernelSU "${KERNEL_DIR}/"
+          ls -la "${KERNEL_DIR}/KernelSU/"
+          ls -la "${KERNEL_DIR}/KernelSU/kernel/"
 
       - name: Generate defconfig & build ONLY KernelSU ko
         run: |
-          cd "$KERNEL_DIR"
+          cd "${KERNEL_DIR}"
           find . -name "*.sh" -exec chmod +x {} \;
           find ./scripts -type f -exec chmod +x {} \;
           chmod +x ./scripts/remove-stale-files
@@ -82,8 +82,7 @@ jobs:
           make prepare
           make modules_prepare
 
-          # M指向 kernel 子目录，这里才是Kbuild/Makefile所在位置
-          KBUILD_MODPOST_WARN=1 make M=$KERNEL_DIR/KernelSU/kernel modules
+          KBUILD_MODPOST_WARN=1 make M="${KERNEL_DIR}/KernelSU/kernel" modules
 
           ls -la ./KernelSU/kernel/
           mkdir -p ./out/modules
