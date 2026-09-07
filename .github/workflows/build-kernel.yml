@@ -19,7 +19,7 @@ jobs:
           chmod +x ./llvm.sh
           sudo ./llvm.sh 18
           sudo apt install -y llvm-18
-          # 全套llvm工具软链接，去掉‑18后缀，适配内核LLVM=1
+          # Full set llvm symlinks strip -18 suffix for kernel LLVM=1
           sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
           sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
           sudo ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld
@@ -27,13 +27,15 @@ jobs:
           sudo ln -sf /usr/bin/llvm-objcopy-18 /usr/bin/llvm-objcopy
           sudo ln -sf /usr/bin/llvm-nm-18 /usr/bin/llvm-nm
           sudo ln -sf /usr/bin/llvm-readelf-18 /usr/bin/llvm-readelf
-          # 校验全部工具
+          sudo ln -sf /usr/bin/llvm-strip-18 /usr/bin/llvm-strip
+          # verify all binaries
           clang --version
           ld.lld --version
           llvm-ar --version
           llvm-objcopy --version
           llvm-nm --version
           llvm-readelf --version
+          llvm-strip --version
 
       - name: Download s25_gki v6.6.152‑r21 kernel source
         run: |
