@@ -122,18 +122,6 @@ jobs:
       - name: Resolve configuration
         run: bash scripts/config.sh
 
-      - name: Free up disk space
-        if: env.REMOVE_UNUSED_PACKAGES == 'true'
-        uses: jlumbroso/free-disk-space@54081f138730dfa95688f563f4786effcdb79814
-        with:
-          tool-cache: true
-          android: false
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: false
-
       - name: Add swap space
         run: |
           sudo fallocate -l 8G /mnt/swapfile
@@ -255,7 +243,7 @@ jobs:
           ls -la release/
 
       - name: Create release
-        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build.outputs.device }}-${{ needs.build.outputs.build_time }}
           name: ${{ needs.build.outputs.device }} · ${{ needs.build.outputs.ksu_name }} · ${{ needs.build.outputs.build_time }}
