@@ -76,7 +76,8 @@ jobs:
           } >> .config
 
           make olddefconfig
-          sed -i 's/CONFIG_NETFILTER_XT_MARK=[ym]/CONFIG_NETFILTER_XT_MARK=n/' .config
+          # ========== 强制关闭 xt_mark，这里是关键 ==========
+           sed -i 's/^CONFIG_NETFILTER_XT_MARK=.*/CONFIG_NETFILTER_XT_MARK=n/' .config
           # 再跑一次olddefconfig保证配置生效
           make olddefconfig
           # 先编译模块，生成modules.order
