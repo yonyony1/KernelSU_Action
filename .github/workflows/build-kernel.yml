@@ -11,19 +11,28 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install base build dependencies & LLVM‑18 via llvm.sh
+      - name: Install base build dependencies & full LLVM‑18
         run: |
           sudo apt update
           sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git curl
           curl -fsSL https://apt.llvm.org/llvm.sh -o llvm.sh
           chmod +x ./llvm.sh
           sudo ./llvm.sh 18
-          # create symlinks without -18 suffix
+          # 安装完整llvm工具集 (llvm‑nm llvm‑objcopy llvm‑readelf …)
+          sudo apt install -y llvm-18
+          # symlinks strip -18 suffix for kernel LLVM=1 build
           sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
           sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
           sudo ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld
+          sudo ln -sf /usr/bin/llvm-objcopy-18 /usr/bin/llvm-objcopy
+          sudo ln -sf /usr/bin/llvm-nm-18 /usr/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-readelf-18 /usr/bin/llvm-readelf
+          # verify all tools
           clang --version
           ld.lld --version
+          llvm-objcopy --version
+          llvm-nm --version
+          llvm-readelf --version
 
       - name: Download s25_gki v6.6.152‑r21 kernel source
         run: |
