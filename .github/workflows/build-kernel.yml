@@ -18,18 +18,19 @@ jobs:
           curl -fsSL https://apt.llvm.org/llvm.sh -o llvm.sh
           chmod +x ./llvm.sh
           sudo ./llvm.sh 18
-          # 安装完整llvm工具集 (llvm‑nm llvm‑objcopy llvm‑readelf …)
           sudo apt install -y llvm-18
-          # symlinks strip -18 suffix for kernel LLVM=1 build
+          # 全套llvm工具软链接，去掉‑18后缀，适配内核LLVM=1
           sudo ln -sf /usr/bin/clang-18 /usr/bin/clang
           sudo ln -sf /usr/bin/clang++-18 /usr/bin/clang++
           sudo ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld
+          sudo ln -sf /usr/bin/llvm-ar-18 /usr/bin/llvm-ar
           sudo ln -sf /usr/bin/llvm-objcopy-18 /usr/bin/llvm-objcopy
           sudo ln -sf /usr/bin/llvm-nm-18 /usr/bin/llvm-nm
           sudo ln -sf /usr/bin/llvm-readelf-18 /usr/bin/llvm-readelf
-          # verify all tools
+          # 校验全部工具
           clang --version
           ld.lld --version
+          llvm-ar --version
           llvm-objcopy --version
           llvm-nm --version
           llvm-readelf --version
