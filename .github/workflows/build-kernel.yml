@@ -50,14 +50,14 @@ jobs:
       - name: Generate defconfig & build modules(LKM only)
         run: |
           cd "$KERNEL_DIR"
-          # 递归给整个源码树所有shell脚本赋执行权限，修复arch下面vdso脚本权限
+          # 修复脚本权限，修复 remove‑stale‑files Permission denied
           find . -name "*.sh" -exec chmod +x {} \;
-          find . -executable -type f -name "*" -exec chmod +x {} \;
+          find ./scripts -type f -exec chmod +x {} \;
+          chmod +x ./scripts/remove-stale-files
 
           export ARCH=arm64
           export LLVM=1
           export LLVM_IAS=1
-          # 优先clang路径，其次系统llvm‑18路径
           export PATH="$CLANG_PATH:/usr/lib/llvm-18/bin:$PATH"
           export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
@@ -74,7 +74,14 @@ jobs:
           } >> .config
 
           make olddefconfig
-          make -j"$(nproc)" LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules
+
+          # 编译模块 + modules_install 输出 out/modules
+          make -j"$(nproc)" LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules modules_install INSTALL_MOD_PATH=./out/modules
+
+          # ========== 打印关键配置，CI日志直接看KSU是否生效 ==========
+          echo -e "\n===== KSU 关键配置检查 ====="
+          grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_MODULE_SIG' .config
+          echo -e "=============================\n"
 
       - name: Collect ksu.ko artifact
         uses: actions/upload-artifact@v4
