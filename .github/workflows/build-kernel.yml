@@ -12,23 +12,20 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install build dependencies + full llvm‑18 toolchain
+      - name: Install minimal build dependencies
         run: |
           sudo apt update
-          sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git lld-18 llvm-18
+          sudo apt install -y bc bison flex libssl-dev libelf-dev gcc make wget tar git
 
-      - name: Download AOSP clang‑r547379 (s25_gki matched toolchain)
+      - name: Download LLVM‑18.1.8 (ubuntu‑18.04 build, no proxy)
         run: |
           mkdir -p "$WORKSPACE"/clang
           cd "$WORKSPACE"/clang
-          wget --tries=5 --retry-connrefused -O clang.tar.gz https://github.com/itsaschoolbus-stuff/clang-mirror/releases/download/clang-r547379-aosp/clang.tar.gz
-          tar -xf clang.tar.gz --strip-components=1
+          wget --tries=5 --retry-connrefused -O clang.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+          tar -xf clang.tar.xz --strip-components=1
           chmod +x bin/*
-          # 软链接系统lld‑18补齐ld.lld
-          ln -sf /usr/bin/lld-18 "$CLANG_PATH"/ld.lld
-          ln -sf /usr/bin/lld-18 "$CLANG_PATH"/lld
 
-      - name: Download & extract full kernel source tarball
+      - name: Download s25_gki v6.6.152‑r21 kernel source (no proxy)
         run: |
           mkdir -p "$WORKSPACE"/android-kernel
           cd "$WORKSPACE"
@@ -46,11 +43,12 @@ jobs:
           cd "$WORKSPACE"
           git clone --depth 1 --branch v3.3.0 https://github.com/tiann/KernelSU.git KernelSU
           cp -r KernelSU/kernel "$KERNEL_DIR"/KernelSU
+          ls -la "$KERNEL_DIR"/KernelSU
 
       - name: Generate defconfig & build modules(LKM only)
         run: |
           cd "$KERNEL_DIR"
-          # 修复脚本权限，修复 remove‑stale‑files Permission denied
+          # fix script execute permission
           find . -name "*.sh" -exec chmod +x {} \;
           find ./scripts -type f -exec chmod +x {} \;
           chmod +x ./scripts/remove-stale-files
@@ -58,7 +56,7 @@ jobs:
           export ARCH=arm64
           export LLVM=1
           export LLVM_IAS=1
-          export PATH="$CLANG_PATH:/usr/lib/llvm-18/bin:$PATH"
+          export PATH="$CLANG_PATH:$PATH"
           export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
 
@@ -76,16 +74,11 @@ jobs:
           } >> .config
 
           make olddefconfig
-          # ========== 强制关闭 xt_mark，这里是关键 ==========
-           sed -i 's/^CONFIG_NETFILTER_XT_MARK=.*/CONFIG_NETFILTER_XT_MARK=n/' .config
-          # 再跑一次olddefconfig保证配置生效
-          make olddefconfig
-          # 先编译模块，生成modules.order
+
+          # single thread for full error log
           make LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules
-          # 再执行模块安装，单线程避免竞态
           make -j1 LD=ld.lld CLANG_TRIPLE=aarch64-linux-gnu- modules_install INSTALL_MOD_PATH=./out/modules
 
-          # ========== 打印关键配置，CI日志直接看KSU是否生效 ==========
           echo -e "\n===== KSU 关键配置检查 ====="
           grep -E 'CONFIG_KSU|CONFIG_KSU_LKM|CONFIG_MODULES|CONFIG_KPROBES|CONFIG_KALLSYMS|CONFIG_MODULE_SIG' .config
           echo -e "=============================\n"
