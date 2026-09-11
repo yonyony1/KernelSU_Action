@@ -1,6 +1,6 @@
 diff --git a/kernel/Kbuild b/kernel/Kbuild
 index 85932d3..3a5d658 100644
---- a/kernel/Kbuild
+--- a/kernel/Kbuild 
 +++ b/kernel/Kbuild
 @@ -1,5 +1,8 @@
  kernelsu-objs := core/init.o
