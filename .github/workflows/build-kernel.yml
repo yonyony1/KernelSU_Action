@@ -173,7 +173,7 @@ jobs:
 
       # ========== 重点：只编译模块，不编译Image ==========
       - name: Build kernel modules (.ko)
-        run: bash scripts/build-modules.sh all
+        run: bash < scripts/build-modules.sh all
 
       - name: Package artifacts (merge ko to single binary blob)
         run: bash scripts/package-modules.sh all
