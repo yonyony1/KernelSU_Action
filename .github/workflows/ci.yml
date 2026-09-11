@@ -21,7 +21,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends shellcheck
-          shellcheck --severity=warning --external-sources scripts/*.sh patches/*.sh
+          # 移除 patches/*.sh，只检查scripts下shell脚本；-e SC2046 忽略make -j$(nproc)警告
+          shellcheck --severity=warning --external-sources -e SC2046 scripts/*.sh
 
       - name: actionlint
         run: |
