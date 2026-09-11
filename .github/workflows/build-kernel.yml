@@ -171,9 +171,19 @@ jobs:
           key: kernel-modules-${{ env.DEVICE }}-${{ env.KSU_VARIANT }}-${{ env.KERNEL_VERSION }}
           max-size: 2G
 
+      - name: Debug check files & fix line ending
+        working-directory: ${{ github.workspace }}
+        run: |
+          pwd
+          ls -la
+          ls -la scripts/
+          sed -i 's/\r$//' scripts/build-modules.sh
+          chmod +x scripts/build-modules.sh
+
       # ========== 重点：只编译模块，不编译Image ==========
       - name: Build kernel modules (.ko)
-        run: bash < scripts/build-modules.sh all
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/build-modules.sh all
 
       - name: Package artifacts (merge ko to single binary blob)
         run: bash scripts/package-modules.sh all
