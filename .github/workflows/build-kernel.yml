@@ -177,6 +177,8 @@ jobs:
           pwd
           ls -la
           ls -la scripts/
+          mv -v scripts/build‑modules.sh scripts/build-modules.sh
+          mv -v scripts/package‑modules.sh scripts/package-modules.sh
           sed -i 's/\r$//' scripts/build-modules.sh
           chmod +x scripts/build-modules.sh
 
