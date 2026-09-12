@@ -217,9 +217,17 @@ jobs:
         if: env.KSU_VARIANT != 'none'
         run: |
           cd "${KERNEL_DIR}"
-          make M=KernelSU/kernel modules
+          export PATH="${CLANG_PATH}:$PATH"
+          make LLVM=1 LLVM_IAS=1 M=KernelSU/kernel modules
+          ls -la KernelSU/kernel/
           find KernelSU/kernel -name "*.ko"
-          cp KernelSU/kernel/kernelsu.ko out/modules/
+          if [ -f KernelSU/kernel/kernelsu.ko ]; then
+            cp KernelSU/kernel/kernelsu.ko out/modules/
+          else
+            echo "ERROR: kernelsu.ko not generated!"
+            exit 1
+          fi
+
 
       - name: Debug KSU source
         run: |
