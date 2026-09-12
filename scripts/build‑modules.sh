@@ -1,10 +1,14 @@
 #!/bin/bash
 set -e
-
 cd "${WORKSPACE}/android-kernel"
 
-# 仅复用原build.sh的config逻辑，只生成.config，不编译内核镜像
-bash "${GITHUB_WORKSPACE}/scripts/build.sh" config
+# 手动生成 .config，替代 build.sh config
+make -j$(nproc) $KERNEL_CONFIG
+# 加载额外defconfig
+if [[ -n "${EXTRA_DEFCONFIG}" ]]; then
+  make -j$(nproc) ${EXTRA_DEFCONFIG}
+fi
+make -j$(nproc) olddefconfig
 
 echo "===== Building modules only, skip kernel Image ====="
 make -j$(nproc) modules
