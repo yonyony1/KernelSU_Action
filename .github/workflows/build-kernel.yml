@@ -161,6 +161,14 @@ jobs:
         if: env.KSU_VARIANT != 'none'
         run: bash scripts/kernelsu.sh
 
+      - name: Manual run KernelSU setup.sh
+        if: env.KSU_VARIANT != 'none'
+        run: |
+          cd "${KERNEL_DIR}/KernelSU/kernel"
+          bash setup.sh
+          cd "${KERNEL_DIR}"
+          grep -n "KernelSU" Kconfig
+
       - name: Debug KernelSU inject check
         if: env.KSU_VARIANT != 'none'
         run: |
@@ -174,13 +182,6 @@ jobs:
 
       - name: Apply kernel patches
         run: bash scripts/patches.sh all
-
-      - name: Force enable CONFIG_KERNELSU=m
-        run: |
-          cd "${KERNEL_DIR}"
-          echo "CONFIG_KERNELSU=m" >> .config
-          make olddefconfig
-          grep KERNELSU .config
 
       - name: Set up ccache
         if: env.ENABLE_CCACHE == 'true'
