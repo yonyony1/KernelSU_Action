@@ -190,8 +190,8 @@ jobs:
       - name: Debug list ko
         run: |
             echo "MODULE_DIR = ${WORKSPACE}/android-kernel/out/modules"
-          ls -la ${WORKSPACE}/android-kernel/out/modules || echo "dir not exist"
-    find ${WORKSPACE}/android-kernel -name "*.ko"
+            ls -la ${WORKSPACE}/android-kernel/out/modules || echo "dir not exist"
+            find ${WORKSPACE}/android-kernel -name "*.ko"
 
 
       - name: Package artifacts (merge ko to single binary blob)
