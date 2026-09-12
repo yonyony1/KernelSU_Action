@@ -222,11 +222,11 @@ jobs:
           make LLVM=1 LLVM_IAS=1 gki_defconfig
           # 一次性写入配置，消除SC2129警告
           cat >> .config <<'EOF'
-CONFIG_KERNELSU=m
-CONFIG_KPROBES=y
-CONFIG_KALLSYMS=y
-CONFIG_KALLSYMS_ALL=y
-EOF
+           CONFIG_KERNELSU=m
+           CONFIG_KPROBES=y
+           CONFIG_KALLSYMS=y
+           CONFIG_KALLSYMS_ALL=y
+          EOF
           make LLVM=1 LLVM_IAS=1 olddefconfig
           # 校验配置
           grep -E 'CONFIG_KERNELSU|CONFIG_KPROBES|CONFIG_KALLSYMS' .config
