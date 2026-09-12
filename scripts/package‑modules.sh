@@ -7,10 +7,12 @@ mkdir -p "${MERGE_OUT}"
 
 KO_LIST=()
 [ -f "${MODULE_DIR}/susfs.ko" ] && KO_LIST+=("${MODULE_DIR}/susfs.ko")
-[ -f "${MODULE_DIR}/ksu.ko" ] && KO_LIST+=("${MODULE_DIR}/ksu.ko")
+[ -f "${MODULE_DIR}/kernelsu.ko" ] && KO_LIST+=("${MODULE_DIR}/kernelsu.ko")
 
 if [ ${#KO_LIST[@]} -eq 0 ]; then
   echo "No ko files found to merge!"
+  echo "DEBUG: Looking in ${MODULE_DIR}"
+  find ${WORKSPACE}/android-kernel -name "*.ko"
   exit 1
 fi
 
