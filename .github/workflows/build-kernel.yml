@@ -176,7 +176,7 @@ jobs:
            echo "==== Verify inject result ===="
            grep -n "KernelSU" Kconfig
            grep -n "KernelSU" Makefile
-       - name: Debug KernelSU inject check
+      - name: Debug KernelSU inject check
          if: env.KSU_VARIANT != 'none'
          run: |
            echo "KERNEL_DIR=${KERNEL_DIR}"
@@ -253,7 +253,7 @@ jobs:
       - name: Upload merged binary blob
         uses: actions/upload-artifact@v4
         with:
-          name: merged‑blob-${{ env.DEVICE }}-${{ env.BUILD_TIME }}
+          name: merged-blob-${{ env.DEVICE }}-${{ env.BUILD_TIME }}
           path: kernel_workspace/out_merged/*.bin
           if-no-files-found: error
 
