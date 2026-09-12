@@ -161,8 +161,26 @@ jobs:
         if: env.KSU_VARIANT != 'none'
         run: bash scripts/kernelsu.sh
 
+      - name: Debug KernelSU inject check
+        if: env.KSU_VARIANT != 'none'
+        run: |
+          echo "KERNEL_DIR=${KERNEL_DIR}"
+          ls -la "${KERNEL_DIR}/KernelSU/"
+          ls -la "${KERNEL_DIR}/KernelSU/kernel/"
+          echo "==== Check top level Makefile ===="
+          grep -n "KernelSU" "${KERNEL_DIR}/Makefile" || echo "NO KernelSU entry in top Makefile"
+          echo "==== Check top Kconfig ===="
+          grep -n "KernelSU" "${KERNEL_DIR}/Kconfig" || echo "NO KernelSU entry in top Kconfig"
+
       - name: Apply kernel patches
         run: bash scripts/patches.sh all
+
+      - name: Force enable CONFIG_KERNELSU=m
+        run: |
+          cd "${KERNEL_DIR}"
+          echo "CONFIG_KERNELSU=m" >> .config
+          make olddefconfig
+          grep KERNELSU .config
 
       - name: Set up ccache
         if: env.ENABLE_CCACHE == 'true'
