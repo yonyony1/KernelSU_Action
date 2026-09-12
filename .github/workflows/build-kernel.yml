@@ -162,8 +162,8 @@ jobs:
         run: bash scripts/kernelsu.sh
 
       - name: Manual inject KSU into kernel Kconfig & Makefile (skip broken setup.sh)
-           if: env.KSU_VARIANT != 'none'
-           run: |
+        if: env.KSU_VARIANT != 'none'
+        run: |
            cd "${KERNEL_DIR}"
            # 向顶层Kconfig追加引用KernelSU的Kconfig，避免重复写入
            if ! grep -q "KernelSU/kernel/Kconfig" Kconfig; then
