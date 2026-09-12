@@ -242,7 +242,7 @@ jobs:
           if [ -f KernelSU/kernel/kernelsu.ko ]; then
             cp KernelSU/kernel/kernelsu.ko out/modules/
             echo "✅ kernelsu.ko build success"
-    else
+          else
             echo "ERROR: kernelsu.ko not generated!"
             exit 1
           fi
