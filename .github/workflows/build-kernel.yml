@@ -161,24 +161,31 @@ jobs:
         if: env.KSU_VARIANT != 'none'
         run: bash scripts/kernelsu.sh
 
-      - name: Manual run KernelSU setup.sh
-        if: env.KSU_VARIANT != 'none'
-        run: |
-          cd "${KERNEL_DIR}/KernelSU/kernel"
-          bash setup.sh
-          cd "${KERNEL_DIR}"
-          grep -n "KernelSU" Kconfig
-
-      - name: Debug KernelSU inject check
-        if: env.KSU_VARIANT != 'none'
-        run: |
-          echo "KERNEL_DIR=${KERNEL_DIR}"
-          ls -la "${KERNEL_DIR}/KernelSU/"
-          ls -la "${KERNEL_DIR}/KernelSU/kernel/"
-          echo "==== Check top level Makefile ===="
-          grep -n "KernelSU" "${KERNEL_DIR}/Makefile" || echo "NO KernelSU entry in top Makefile"
-          echo "==== Check top Kconfig ===="
-          grep -n "KernelSU" "${KERNEL_DIR}/Kconfig" || echo "NO KernelSU entry in top Kconfig"
+      - name: Manual inject KSU into kernel Kconfig & Makefile (skip broken setup.sh)
+         if: env.KSU_VARIANT != 'none'
+         run: |
+           cd "${KERNEL_DIR}"
+           # 向顶层Kconfig追加引用KernelSU的Kconfig，避免重复写入
+           if ! grep -q "KernelSU/kernel/Kconfig" Kconfig; then
+             echo 'source "KernelSU/kernel/Kconfig"' >> Kconfig
+           fi
+           # 顶层Makefile增加KernelSU模块编译，避免重复写入
+           if ! grep -q "KernelSU" Makefile; then
+             echo 'obj-m += KernelSU/kernel/' >> Makefile
+           fi
+           echo "==== Verify inject result ===="
+           grep -n "KernelSU" Kconfig
+           grep -n "KernelSU" Makefile
+       - name: Debug KernelSU inject check
+         if: env.KSU_VARIANT != 'none'
+         run: |
+           echo "KERNEL_DIR=${KERNEL_DIR}"
+           ls -la "${KERNEL_DIR}/KernelSU/"
+           ls -la "${KERNEL_DIR}/KernelSU/kernel/"
+           echo "==== Check top level Makefile ===="
+           grep -n "KernelSU" "${KERNEL_DIR}/Makefile" || echo "NO KernelSU entry in top Makefile"
+           echo "==== Check top Kconfig ===="
+           grep -n "KernelSU" "${KERNEL_DIR}/Kconfig" || echo "NO KernelSU entry in top Kconfig"
 
       - name: Apply kernel patches
         run: bash scripts/patches.sh all
