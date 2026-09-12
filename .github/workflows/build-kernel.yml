@@ -213,21 +213,40 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: bash scripts/build-modules.sh all
 
+      - name: Generate kernel config and force set KSU = m
+        run: |
+          cd "${KERNEL_DIR}"
+          export PATH="${CLANG_PATH}:$PATH"
+          # 基础defconfig
+          make LLVM=1 LLVM_IAS=1 gki_defconfig
+          # 强制追加，覆盖原有配置
+          echo "CONFIG_KERNELSU=m" >> .config
+          echo "CONFIG_KPROBES=y" >> .config
+          echo "CONFIG_KALLSYMS=y" >> .config
+          echo "CONFIG_KALLSYMS_ALL=y" >> .config
+          # olddefconfig 校验并清理冗余，保留我们写入的选项
+          make LLVM=1 LLVM_IAS=1 olddefconfig
+          # 校验.config确认写入成功
+          grep -E 'CONFIG_KERNELSU|CONFIG_KPROBES|CONFIG_KALLSYMS' .config
+
       - name: Build KSU module manually and copy ko
         if: env.KSU_VARIANT != 'none'
         run: |
           cd "${KERNEL_DIR}"
           chmod +x -R scripts/
           export PATH="${CLANG_PATH}:$PATH"
+          # 只编译模块，不编译完整内核Image
           make LLVM=1 LLVM_IAS=1 M=KernelSU/kernel modules
           ls -la KernelSU/kernel/
           find KernelSU/kernel -name "*.ko"
           if [ -f KernelSU/kernel/kernelsu.ko ]; then
             cp KernelSU/kernel/kernelsu.ko out/modules/
-          else
+            echo "✅ kernelsu.ko build success"
+    else
             echo "ERROR: kernelsu.ko not generated!"
             exit 1
           fi
+
 
 
       - name: Debug KSU source
