@@ -19,7 +19,7 @@ fi
 make olddefconfig
 
 echo "===== Building modules only, skip kernel Image ====="
-make -j$(nproc) modules
+make -j$(nproc) HOSTCC=gcc HOSTCXX=g++ modules
 
 # 收集所有ko到输出目录
 mkdir -p out/modules
