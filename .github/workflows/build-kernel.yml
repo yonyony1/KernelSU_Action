@@ -217,6 +217,7 @@ jobs:
         if: env.KSU_VARIANT != 'none'
         run: |
           cd "${KERNEL_DIR}"
+          chmod +x -R scripts/
           export PATH="${CLANG_PATH}:$PATH"
           make LLVM=1 LLVM_IAS=1 M=KernelSU/kernel modules
           ls -la KernelSU/kernel/
