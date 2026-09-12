@@ -187,6 +187,14 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: bash scripts/build-modules.sh all
 
+      - name: Debug KSU source
+        run: |
+          echo "=== KSU kernel dir ==="
+          ls -la "${KERNEL_DIR}/KernelSU/kernel/"
+          cat "${KERNEL_DIR}/KernelSU/kernel/Kbuild"
+          echo "=== Try manual compile KSU ==="
+          make -C "${KERNEL_DIR}" M="${KERNEL_DIR}/KernelSU/kernel" modules
+
       - name: Debug list ko
         run: |
             echo "MODULE_DIR = ${WORKSPACE}/android-kernel/out/modules"
